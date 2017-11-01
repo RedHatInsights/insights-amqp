@@ -1,12 +1,15 @@
 import json
+import logging
 import os
 import pika
 import sys
+import traceback
 from insights.core import plugins
 from insights.core import archives, specs
 from insights.core.evaluators import InsightsEvaluator, SingleEvaluator, InsightsMultiEvaluator
 
 WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
+RETURN_QUEUE = os.environ.get("RETURN_QUEUE", "engine_return")
 MQ_HOST = os.environ.get("MQ_HOST", "localhost")
 
 
@@ -29,13 +32,21 @@ def worker(ch, method, properties, body):
     try:
         extractor = archives.TarExtractor().from_buffer(body)
         response = handle(extractor)
-        print json.dumps(response, indent=4)
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.basic_publish(exchange="",
+                         routing_key=RETURN_QUEUE,
+                         properties=pika.BasicProperties(content_type="application/json"),
+                         body=json.dumps(response, indent=4))
     except KeyboardInterrupt:
-        ch.basic_nack(delivery_tag=method.delivery_tag)
-    except Exception as e:
-        print "Worker failure: %s" % e.message
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.close()
+    except:
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.basic_publish(exchange="",
+                         routing_key=RETURN_QUEUE,
+                         properties=pika.BasicProperties(content_type="text/plain"),
+                         body=traceback.format_exc())
+    logging.root.info("Processed archive")
 
 
 def get_plugin_packages():
@@ -50,6 +61,8 @@ def get_plugin_packages():
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
+    logging.root.setLevel(logging.INFO)
     for pkg in get_plugin_packages():
         print "Loading %s" % pkg
         plugins.load(pkg)
@@ -57,7 +70,9 @@ if __name__ == "__main__":
     channel = connection.channel()
     channel.basic_qos(prefetch_count=1)
     channel.queue_declare(queue=WORK_QUEUE)
+    channel.queue_declare(queue=RETURN_QUEUE)
     channel.basic_consume(worker, queue=WORK_QUEUE)
+    channel.start_consuming()
     try:
         channel.start_consuming()
     except KeyboardInterrupt:
