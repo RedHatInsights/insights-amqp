@@ -55,6 +55,7 @@ if __name__ == "__main__":
         plugins.load(pkg)
     connection = pika.BlockingConnection(pika.ConnectionParameters(MQ_HOST))
     channel = connection.channel()
+    channel.basic_qos(prefetch_count=1)
     channel.queue_declare(queue=WORK_QUEUE)
     channel.basic_consume(worker, queue=WORK_QUEUE)
     try:
