@@ -6,6 +6,9 @@ from insights.core import plugins
 from insights.core import archives, specs
 from insights.core.evaluators import InsightsEvaluator, SingleEvaluator, InsightsMultiEvaluator
 
+WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
+MQ_HOST = os.environ.get("MQ_HOST", "localhost")
+
 
 def handle(extractor, system_id=None, account=None, config=None):
     spec_mapper = specs.SpecMapper(extractor)
@@ -50,10 +53,10 @@ if __name__ == "__main__":
     for pkg in get_plugin_packages():
         print "Loading %s" % pkg
         plugins.load(pkg)
-    connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(MQ_HOST))
     channel = connection.channel()
-    channel.queue_declare(queue="engine_work")
-    channel.basic_consume(worker, queue="engine_work")
+    channel.queue_declare(queue=WORK_QUEUE)
+    channel.basic_consume(worker, queue=WORK_QUEUE)
     try:
         channel.start_consuming()
     except KeyboardInterrupt:
