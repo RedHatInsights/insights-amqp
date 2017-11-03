@@ -52,11 +52,11 @@ def worker(ch, method, properties, body):
 def get_plugin_packages():
     if len(sys.argv) > 1:
         return sys.argv[1:]
-    elif "PLUGIN_PACKAGES" in os.environ:
-        return os.environ["PLUGIN_PACKAGES"].split(",")
+    elif "RULE_PACKAGES" in os.environ:
+        return os.environ["RULE_PACKAGES"].split(",")
     else:
         print "No plugin packages found."
-        print "Specify packages via cmdline argumens or via PLUGIN_PACKAGES environment variable"
+        print "Specify packages via cmdline argumens or via RULE_PACKAGES environment variable"
         sys.exit(1)
 
 
