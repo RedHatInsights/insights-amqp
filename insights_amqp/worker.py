@@ -10,7 +10,7 @@ from insights.core.evaluators import InsightsEvaluator, SingleEvaluator, Insight
 
 WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
 RETURN_QUEUE = os.environ.get("RETURN_QUEUE", "engine_return")
-MQ_HOST = os.environ.get("MQ_HOST", "localhost")
+MQ_URL = os.environ.get("MQ_URL", "amqp://localhost")
 
 
 def handle(extractor, system_id=None, account=None, config=None):
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     for pkg in get_plugin_packages():
         print "Loading %s" % pkg
         plugins.load(pkg)
-    connection = pika.BlockingConnection(pika.ConnectionParameters(MQ_HOST))
+    connection = pika.BlockingConnection(pika.URLParameters(MQ_URL))
     channel = connection.channel()
     channel.basic_qos(prefetch_count=1)
     channel.queue_declare(queue=WORK_QUEUE)
