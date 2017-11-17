@@ -35,7 +35,8 @@ def worker(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.basic_publish(exchange="",
                          routing_key=RETURN_QUEUE,
-                         properties=pika.BasicProperties(content_type="application/json"),
+                         properties=pika.BasicProperties(correlation_id=properties.correlation_id,
+                                                         content_type="application/json"),
                          body=json.dumps(response, indent=4))
     except KeyboardInterrupt:
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -44,7 +45,8 @@ def worker(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.basic_publish(exchange="",
                          routing_key=RETURN_QUEUE,
-                         properties=pika.BasicProperties(content_type="text/plain"),
+                         properties=pika.BasicProperties(correlation_id=properties.correlation_id,
+                                                         content_type="text/plain"),
                          body=traceback.format_exc())
     logging.root.info("Processed archive")
 
