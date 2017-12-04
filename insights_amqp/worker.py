@@ -36,7 +36,7 @@ def worker(ch, method, properties, body):
                          routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id=properties.correlation_id,
                                                          content_type="application/json"),
-                         body=json.dumps(response, indent=4))
+                         body=json.dumps({"success": True, "response": response}))
     except KeyboardInterrupt:
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.close()
@@ -45,8 +45,8 @@ def worker(ch, method, properties, body):
         ch.basic_publish(exchange="",
                          routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id=properties.correlation_id,
-                                                         content_type="text/plain"),
-                         body=traceback.format_exc())
+                                                         content_type="application/json"),
+                         body=json.dumps({"success": False, "reason": traceback.format_exc()}))
     logging.root.info("Processed archive")
 
 

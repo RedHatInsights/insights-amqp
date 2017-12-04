@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import pika
@@ -18,12 +19,9 @@ with open(sys.argv[1], "rb") as fp:
 
 
 def handle_response(ch, method, properties, body):
-    if properties.content_type == "application/json":
-        print body
-        print "Response succeeded!"
-    elif properties.content_type == "text/plain":
-        print body
-        print "Response failed!"
+    response = json.loads(body)
+    print json.dumps(response, indent=4)
+    print "Success!" if response["success"] else "Failure!"
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
