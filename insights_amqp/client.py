@@ -62,6 +62,7 @@ channel.queue_declare(queue=RETURN_QUEUE)
 drain_queue()
 
 print "Posting archive"
-channel.basic_publish(exchange="", routing_key=WORK_QUEUE, body=archive)
+channel.basic_publish(exchange="", routing_key=WORK_QUEUE, body=archive,
+                      properties=pika.BasicProperties(reply_to=RETURN_QUEUE))
 channel.basic_consume(handle_one_response, queue=RETURN_QUEUE)
 channel.start_consuming()

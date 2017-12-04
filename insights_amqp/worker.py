@@ -9,7 +9,6 @@ from insights.core import archives, specs
 from insights.core.evaluators import InsightsEvaluator, SingleEvaluator, InsightsMultiEvaluator
 
 WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
-RETURN_QUEUE = os.environ.get("RETURN_QUEUE", "engine_return")
 MQ_URL = os.environ.get("MQ_URL", "amqp://localhost")
 
 
@@ -34,7 +33,7 @@ def worker(ch, method, properties, body):
         response = handle(extractor)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.basic_publish(exchange="",
-                         routing_key=RETURN_QUEUE,
+                         routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id=properties.correlation_id,
                                                          content_type="application/json"),
                          body=json.dumps(response, indent=4))
@@ -44,7 +43,7 @@ def worker(ch, method, properties, body):
     except:
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.basic_publish(exchange="",
-                         routing_key=RETURN_QUEUE,
+                         routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id=properties.correlation_id,
                                                          content_type="text/plain"),
                          body=traceback.format_exc())
@@ -72,7 +71,6 @@ if __name__ == "__main__":
     channel = connection.channel()
     channel.basic_qos(prefetch_count=1)
     channel.queue_declare(queue=WORK_QUEUE)
-    channel.queue_declare(queue=RETURN_QUEUE)
     channel.basic_consume(worker, queue=WORK_QUEUE)
     channel.start_consuming()
     try:
