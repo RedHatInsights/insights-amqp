@@ -27,29 +27,6 @@ def handle_response(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-msg_count = 0
-
-
-def drain_queue():
-    global msg_count
-    res = channel.queue_declare(queue=RETURN_QUEUE, passive=True)
-    msg_count = res.method.message_count
-    if msg_count:
-        print "Draining queue..."
-
-        def drain(ch, method, properties, body):
-            global msg_count
-            handle_response(ch, method, properties, body)
-            if msg_count > 1:
-                msg_count -= 1
-            else:
-                print "Cancel channel"
-                ch.basic_cancel(consumer_tag="drain")
-
-        channel.basic_consume(drain, queue=RETURN_QUEUE, consumer_tag="drain")
-        channel.start_consuming()
-
-
 def handle_one_response(ch, method, properties, body):
     handle_response(ch, method, properties, body)
     ch.close()
@@ -59,7 +36,6 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(MQ_HOST))
 channel = connection.channel()
 channel.queue_declare(queue=WORK_QUEUE)
 channel.queue_declare(queue=RETURN_QUEUE)
-drain_queue()
 
 print "Posting archive"
 channel.basic_publish(exchange="", routing_key=WORK_QUEUE, body=archive,
