@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import pika
+import shutil
 import sys
 import traceback
 from insights.core import plugins
@@ -31,6 +32,7 @@ def worker(ch, method, properties, body):
     try:
         extractor = archives.TarExtractor().from_buffer(body)
         response = handle(extractor)
+        shutil.rmtree(extractor.tmp_dir)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.basic_publish(exchange="",
                          routing_key=properties.reply_to,
