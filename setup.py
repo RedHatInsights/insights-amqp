@@ -15,5 +15,5 @@ if __name__ == "__main__":
         description="Process Insights archives over AMQP",
         keywords=['insights', 'redhat'],
         packages=find_packages(),
-        install_requires=['insights-core', 'pika'],
+        install_requires=['insights-core', 'pika', 'logstash_formatter'],
     )

@@ -8,6 +8,7 @@ import traceback
 from insights.core import plugins
 from insights.core import archives, specs
 from insights.core.evaluators import InsightsEvaluator, SingleEvaluator, InsightsMultiEvaluator
+from . import util
 
 WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
 MQ_URL = os.environ.get("MQ_URL", "amqp://localhost")
@@ -64,8 +65,7 @@ def get_plugin_packages():
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    logging.root.setLevel(logging.INFO)
+    util.initialize_logging()
     for pkg in get_plugin_packages():
         print "Loading %s" % pkg
         plugins.load(pkg)
