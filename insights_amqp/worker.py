@@ -8,10 +8,11 @@ import traceback
 from insights.core import plugins
 from insights.core import archives, specs
 from insights.core.evaluators import InsightsEvaluator, SingleEvaluator, InsightsMultiEvaluator
-from . import util
+from . import util, s3
 
 WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
 MQ_URL = os.environ.get("MQ_URL", "amqp://localhost")
+ARCHIVE_SOURCE = os.environ.get("ARCHIVE_SOURCE", "message")
 
 
 def handle(extractor, system_id=None, account=None, config=None):
@@ -31,7 +32,13 @@ def handle(extractor, system_id=None, account=None, config=None):
 
 def worker(ch, method, properties, body):
     try:
-        extractor = archives.TarExtractor().from_buffer(body)
+        if ARCHIVE_SOURCE == "message":
+            buffer_ = body
+        else:
+            request = json.loads(body)
+            buffer_ = s3.fetch(request["key"])
+
+        extractor = archives.TarExtractor().from_buffer(buffer_)
         response = handle(extractor)
         shutil.rmtree(extractor.tmp_dir)
         ch.basic_ack(delivery_tag=method.delivery_tag)

@@ -2,10 +2,13 @@ import json
 import os
 import sys
 import pika
+import uuid
+from . import s3
 
 WORK_QUEUE = os.environ.get("WORK_QUEUE", "engine_work")
 RETURN_QUEUE = os.environ.get("RETURN_QUEUE", "engine_return")
 MQ_HOST = os.environ.get("MQ_HOST", "localhost")
+ARCHIVE_SOURCE = os.environ.get("ARCHIVE_SOURCE", "message")
 
 
 if len(sys.argv) < 2:
@@ -14,8 +17,13 @@ if len(sys.argv) < 2:
 elif not os.path.isfile(sys.argv[1]):
     print "Please specify a valid archive path"
 
-with open(sys.argv[1], "rb") as fp:
-    archive = fp.read()
+if ARCHIVE_SOURCE == "message":
+    with open(sys.argv[1], "rb") as fp:
+        archive = fp.read()
+else:
+    archive_id = str(uuid.uuid4())
+    s3.s3_post(sys.argv[1], s3.transfer_bucket, archive_id, None)
+    archive = json.dumps({"key": archive_id})
 
 
 def handle_response(ch, method, properties, body):
