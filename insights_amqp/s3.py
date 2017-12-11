@@ -43,9 +43,10 @@ def s3_post(path, bucket_name, fname, system_id):
 
 
 def fetch(uuid):
-    print transfer_bucket
-    print uuid
-    return s3_client.get_object(Bucket=transfer_bucket, Key=uuid)["Body"].read()
+    kwargs = {"Bucket": transfer_bucket, "Key": uuid}
+    body = s3_client.get_object(**kwargs)["Body"].read()
+    s3_client.delete_object(**kwargs)
+    return body
 
 
 def save(path, system_id, content_type, account_number):
