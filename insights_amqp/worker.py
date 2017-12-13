@@ -57,7 +57,9 @@ def worker(ch, method, properties, body):
                          properties=pika.BasicProperties(correlation_id=properties.correlation_id,
                                                          content_type="application/json"),
                          body=json.dumps({"success": False, "reason": traceback.format_exc()}))
-    logging.root.info("Processed archive")
+        logging.root.exception("Processing failed")
+    else:
+        logging.root.info("Processed archive")
 
 
 def get_plugin_packages():
@@ -74,7 +76,7 @@ def get_plugin_packages():
 if __name__ == "__main__":
     util.initialize_logging()
     for pkg in get_plugin_packages():
-        print "Loading %s" % pkg
+        logging.root.info("Loading %s", pkg)
         plugins.load(pkg)
     connection = pika.BlockingConnection(pika.URLParameters(MQ_URL))
     channel = connection.channel()
