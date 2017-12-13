@@ -32,6 +32,9 @@ transfer_bucket = os.environ.get("transfer_bucket")
 sd_bucket = os.environ.get("sd_s3_bucket")
 sd_whitelist = os.environ.get("sd_whitelist", "").split(",")
 
+if (os.environ.get("ARCHIVE_SOURCE") == "s3" and not transfer_bucket):
+    raise ValueError("Must specify transfer_bucket when using s3 archive source")
+
 
 def s3_post(path, bucket_name, fname, system_id):
     try:
