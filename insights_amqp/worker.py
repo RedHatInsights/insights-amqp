@@ -3,6 +3,7 @@ import logging
 import os
 import pika
 import shutil
+import signal
 import sys
 import traceback
 from insights.core import plugins
@@ -73,17 +74,25 @@ def get_plugin_packages():
         sys.exit(1)
 
 
+def health_check(signum, frame):
+    with open("/tmp/insights-health", "w") as fp:
+        fp.write("0")
+
+
 if __name__ == "__main__":
     util.initialize_logging()
     for pkg in get_plugin_packages():
         logging.root.info("Loading %s", pkg)
         plugins.load(pkg)
+
     connection = pika.BlockingConnection(pika.URLParameters(MQ_URL))
     channel = connection.channel()
     channel.basic_qos(prefetch_count=1)
     channel.queue_declare(queue=WORK_QUEUE)
     channel.basic_consume(worker, queue=WORK_QUEUE)
-    channel.start_consuming()
+
+    signal.signal(20, health_check)
+
     try:
         channel.start_consuming()
     except KeyboardInterrupt:
