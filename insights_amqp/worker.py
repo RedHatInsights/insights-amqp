@@ -39,8 +39,12 @@ def worker(ch, method, properties, body):
             request = json.loads(body)
             buffer_ = s3.fetch(request["key"])
 
+        # req_id = properties.headers.get("X-Request-Id")
+        account = properties.headers.get("X-Account")
+
         extractor = archives.TarExtractor().from_buffer(buffer_)
         response = handle(extractor)
+        s3.save(buffer_, response["system"].get("system_id"), extractor.content_type, account)
         shutil.rmtree(extractor.tmp_dir)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.basic_publish(exchange="",

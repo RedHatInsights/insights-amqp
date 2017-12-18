@@ -1,6 +1,7 @@
 import logging
 import os
 import datetime
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,10 @@ if (os.environ.get("ARCHIVE_SOURCE") == "s3" and not transfer_bucket):
     raise ValueError("Must specify transfer_bucket when using s3 archive source")
 
 
-def s3_post(path, bucket_name, fname, system_id):
+def s3_post(fp, bucket_name, fname, system_id):
     try:
-        with open(path, "rb") as fp:
-            s3_client.upload_fileobj(fp, bucket_name, fname)
+        s3_client.upload_fileobj(fp, bucket_name, fname)
+        fp.close()
     except Exception as e:
         logger.warning("Error sending [%s] archive to s3 bucket %s: %s",
                        system_id, bucket_name, e.message)
@@ -52,11 +53,11 @@ def fetch(uuid):
     return body
 
 
-def save(path, system_id, content_type, account_number):
+def save(buffer_, system_id, content_type, account_number):
     # ensure all env vars are properly set and this is an insights archive
     if s3_client and system_id:
         fname = ".".join([system_id, EXTENSIONS[content_type]])
-        s3_post(path, bucket, fname, system_id)
+        s3_post(BytesIO(buffer_), bucket, fname, system_id)
         if account_number in sd_whitelist:
             sd_fname = "%s/%s/%s.%s" % (
                 account_number,
@@ -64,4 +65,4 @@ def save(path, system_id, content_type, account_number):
                 datetime.date.today(),
                 EXTENSIONS[content_type]
             )
-            s3_post(path, sd_bucket, sd_fname, system_id)
+            s3_post(BytesIO(buffer_), sd_bucket, sd_fname, system_id)
