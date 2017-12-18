@@ -33,14 +33,15 @@ def handle(extractor, system_id=None, account=None, config=None):
 
 def worker(ch, method, properties, body):
     try:
+        req_id = properties.headers.get("X-Request-Id")
+        account = properties.headers.get("X-Account")
+        setattr(util.thread_context, "request_id", req_id)
+
         if ARCHIVE_SOURCE == "message":
             buffer_ = body
         else:
             request = json.loads(body)
             buffer_ = s3.fetch(request["key"])
-
-        # req_id = properties.headers.get("X-Request-Id")
-        account = properties.headers.get("X-Account")
 
         extractor = archives.TarExtractor().from_buffer(buffer_)
         response = handle(extractor)
